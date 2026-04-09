@@ -1,174 +1,171 @@
+import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle } from 'lucide-react';
+import { PlusCircle, AlertCircle, ShieldAlert, Lock, Fingerprint } from 'lucide-react';
+import VideoCallSection from '../../components/VideoCallSection';
+import DocumentChamber from '../../components/DocumentChamber';
+import MeetingCalendar from '../../components/MeetingCalendar'; 
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Input } from '../../components/ui/Input'; // Ensure this is imported
 import { CollaborationRequestCard } from '../../components/collaboration/CollaborationRequestCard';
 import { InvestorCard } from '../../components/investor/InvestorCard';
 import { useAuth } from '../../context/AuthContext';
-import { CollaborationRequest } from '../../types';
 import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
 import { investors } from '../../data/users';
+import { PaymentSection } from '../../components/payments/PaymentSection';
 
 export const EntrepreneurDashboard: React.FC = () => {
+  const { pathname, hash } = useLocation();
   const { user } = useAuth();
-  const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
-  const [recommendedInvestors, setRecommendedInvestors] = useState(investors.slice(0, 3));
-  
+  const [collaborationRequests, setCollaborationRequests] = useState<any[]>([]);
+  const recommendedInvestors = investors.slice(0, 3);
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+useEffect(() => {
+    if (hash) {
+      const element = document.getElementById(hash.replace('#', ''));
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100); // Small delay to ensure the page has loaded
+      }
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname, hash]); // Runs every time the link changes
   useEffect(() => {
     if (user) {
-      // Load collaboration requests
       const requests = getRequestsForEntrepreneur(user.id);
       setCollaborationRequests(requests);
     }
   }, [user]);
-  
-  const handleRequestStatusUpdate = (requestId: string, status: 'accepted' | 'rejected') => {
-    setCollaborationRequests(prevRequests => 
-      prevRequests.map(req => 
-        req.id === requestId ? { ...req, status } : req
-      )
-    );
-  };
-  
+
   if (!user) return null;
-  
   const pendingRequests = collaborationRequests.filter(req => req.status === 'pending');
-  
+
+  const calculateStrength = (pass: string) => {
+    let score = 0;
+    if (pass.length > 8) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    return score;
+  };
+
+  const strength = calculateStrength(password);
+  const strengthColors = ["bg-gray-200", "bg-red-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
+
+  const handleOtpChange = (value: string, index: number) => {
+    if (isNaN(Number(value))) return;
+    const newOtp = [...otp];
+    newOtp[index] = value.substring(value.length - 1);
+    setOtp(newOtp);
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      (nextInput as HTMLInputElement)?.focus();
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome, {user.name}</h1>
-          <p className="text-gray-600">Here's what's happening with your startup today</p>
+    <div className="space-y-8 animate-fade-in pb-10 max-w-7xl mx-auto px-4">
+      {/* 1. HEADER */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Welcome, {user.name}</h1>
+        <p className="text-gray-600">Your startup control center</p>
+      </div>
+
+      {/* 2. CALENDAR - Added ID */}
+      <Card >
+        <CardHeader><h2 className="text-xl font-bold">Meeting Scheduler</h2></CardHeader>
+        <CardBody><MeetingCalendar /></CardBody>
+      </Card>
+
+      {/* 3. PITCH & DOCUMENTS - Added IDs */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div id="pitch-room" className="lg:col-span-7 space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
+            Live Pitch Room
+          </h2>
+          <VideoCallSection />
         </div>
-        
-        <Link to="/investors">
-          <Button
-            leftIcon={<PlusCircle size={18} />}
-          >
-            Find Investors
-          </Button>
-        </Link>
+
+        <div id="documents" className="lg:col-span-5 space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-green-600 rounded-full"></span>
+            Document Chamber
+          </h2>
+          <DocumentChamber />
+        </div>
       </div>
-      
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-primary-50 border border-primary-100">
+
+      {/* 4. FINANCES - Added ID */}
+      <div id="finances" className="space-y-4 pt-4 border-t border-gray-100">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
+          Finances & Wallet
+        </h2>
+        <PaymentSection role="entrepreneur" />
+      </div>
+
+      {/* 5. SECURITY - Added ID */}
+      <section id="security" className="space-y-4 pt-4 border-t border-gray-100">
+        <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
+          <ShieldAlert className="text-emerald-600" size={22} />
+          Security & Access Control
+        </h2>
+        <Card className="border-emerald-100 bg-emerald-50/30">
           <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-primary-100 rounded-full mr-4">
-                <Bell size={20} className="text-primary-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-primary-700">Pending Requests</p>
-                <h3 className="text-xl font-semibold text-primary-900">{pendingRequests.length}</h3>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-        
-        <Card className="bg-secondary-50 border border-secondary-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-secondary-100 rounded-full mr-4">
-                <Users size={20} className="text-secondary-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-secondary-700">Total Connections</p>
-                <h3 className="text-xl font-semibold text-secondary-900">
-                  {collaborationRequests.filter(req => req.status === 'accepted').length}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-4">
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <Lock size={18} className="text-emerald-700"/> Update Master Password
                 </h3>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-        
-        <Card className="bg-accent-50 border border-accent-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-accent-100 rounded-full mr-4">
-                <Calendar size={20} className="text-accent-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
-                <h3 className="text-xl font-semibold text-accent-900">2</h3>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-        
-        <Card className="bg-success-50 border border-success-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-full mr-4">
-                <TrendingUp size={20} className="text-success-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-success-700">Profile Views</p>
-                <h3 className="text-xl font-semibold text-success-900">24</h3>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Collaboration requests */}
-        <div className="lg:col-span-2 space-y-4">
-          <Card>
-            <CardHeader className="flex justify-between items-center">
-              <h2 className="text-lg font-medium text-gray-900">Collaboration Requests</h2>
-              <Badge variant="primary">{pendingRequests.length} pending</Badge>
-            </CardHeader>
-            
-            <CardBody>
-              {collaborationRequests.length > 0 ? (
-                <div className="space-y-4">
-                  {collaborationRequests.map(request => (
-                    <CollaborationRequestCard
-                      key={request.id}
-                      request={request}
-                      onStatusUpdate={handleRequestStatusUpdate}
-                    />
+                <Input type="password" placeholder="Minimum 8 characters..." value={password} onChange={(e) => setPassword(e.target.value)} fullWidth />
+                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden flex gap-1">
+                  {[1, 2, 3, 4].map((step) => (
+                    <div key={step} className={`h-full flex-1 transition-all ${step <= strength ? strengthColors[strength] : 'bg-gray-200'}`} />
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                    <AlertCircle size={24} className="text-gray-500" />
-                  </div>
-                  <p className="text-gray-600">No collaboration requests yet</p>
-                  <p className="text-sm text-gray-500 mt-1">When investors are interested in your startup, their requests will appear here</p>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <Fingerprint size={18} className="text-emerald-700"/> 2FA Authentication
+                </h3>
+                <div className="flex gap-2">
+                  {otp.map((digit, i) => (
+                    <input key={i} id={`otp-${i}`} type="text" maxLength={1} value={digit} onChange={(e) => handleOtpChange(e.target.value, i)} className="w-10 h-12 text-center border-2 border-emerald-200 rounded-md focus:border-emerald-500 outline-none" />
+                  ))}
                 </div>
-              )}
-            </CardBody>
-          </Card>
-        </div>
-        
-        {/* Recommended investors */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="flex justify-between items-center">
-              <h2 className="text-lg font-medium text-gray-900">Recommended Investors</h2>
-              <Link to="/investors" className="text-sm font-medium text-primary-600 hover:text-primary-500">
-                View all
-              </Link>
-            </CardHeader>
-            
-            <CardBody className="space-y-4">
-              {recommendedInvestors.map(investor => (
-                <InvestorCard
-                  key={investor.id}
-                  investor={investor}
-                  showActions={false}
-                />
-              ))}
-            </CardBody>
-          </Card>
-        </div>
-      </div>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </section>
+
+      {/* 6. COLLABORATION */}
+      {/* 1. Change the wrapper to span all 3 columns */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
+  <div className="lg:col-span-3"> {/* Changed from col-span-2 to col-span-3 */}
+    <Card>
+      <CardHeader>
+        <h2 className="text-lg font-medium text-gray-900">Collaboration Requests</h2>
+      </CardHeader>
+      <CardBody>
+        {collaborationRequests.length > 0 ? (
+          collaborationRequests.map(req => (
+            <CollaborationRequestCard key={req.id} request={req} onStatusUpdate={() => {}} />
+          ))
+        ) : (
+          <p className="text-center py-8">No requests yet</p>
+        )}
+      </CardBody>
+    </Card>
+  </div>
+</div>
     </div>
   );
 };

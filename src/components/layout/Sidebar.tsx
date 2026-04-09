@@ -1,28 +1,32 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Home, Building2, CircleDollarSign, Users, MessageCircle, 
-  Bell, FileText, Settings, HelpCircle
+  Bell, FileText, Settings, HelpCircle, Video, ShieldCheck, Wallet, Calendar
 } from 'lucide-react';
 
 interface SidebarItemProps {
   to: string;
   icon: React.ReactNode;
   text: string;
+  id?: string;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, text }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, text, id }) => {
+  const location = useLocation();
+  const currentPath = location.pathname + location.hash;
+  const isActive = currentPath === to;
+
   return (
     <NavLink
       to={to}
-      className={({ isActive }) => 
-        `flex items-center py-2.5 px-4 rounded-md transition-colors duration-200 ${
-          isActive 
-            ? 'bg-primary-50 text-primary-700' 
-            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-        }`
-      }
+      id={id}
+      className={`flex items-center py-2.5 px-4 rounded-md transition-colors duration-200 ${
+        isActive 
+          ? 'bg-primary-50 text-primary-700 font-semibold' 
+          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+      }`}
     >
       <span className="mr-3">{icon}</span>
       <span className="text-sm font-medium">{text}</span>
@@ -32,34 +36,38 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, text }) => {
 
 export const Sidebar: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   
   if (!user) return null;
   
-  // Define sidebar items based on user role
   const entrepreneurItems = [
-    { to: '/dashboard/entrepreneur', icon: <Home size={20} />, text: 'Dashboard' },
-    { to: '/profile/entrepreneur/' + user.id, icon: <Building2 size={20} />, text: 'My Startup' },
-    { to: '/investors', icon: <CircleDollarSign size={20} />, text: 'Find Investors' },
-    { to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
-    { to: '/notifications', icon: <Bell size={20} />, text: 'Notifications' },
-    { to: '/documents', icon: <FileText size={20} />, text: 'Documents' },
+    { id: 'tour-dashboard', to: '/dashboard/entrepreneur', icon: <Home size={20} />, text: 'Dashboard' },
+    { id: 'tour-pitch', to: '/dashboard/entrepreneur#pitch-room', icon: <Video size={20} />, text: 'Live Pitch Room' },
+    { id: 'tour-docs', to: '/dashboard/entrepreneur#documents', icon: <FileText size={20} />, text: 'Documents' },
+    { id: 'tour-finance', to: '/dashboard/entrepreneur#finances', icon: <Wallet size={20} />, text: 'Finances' },
+    { id: 'tour-security', to: '/dashboard/entrepreneur#security', icon: <ShieldCheck size={20} />, text: 'Security' },
+    { id: 'tour-startup', to: '/profile/entrepreneur/' + user.id, icon: <Building2 size={20} />, text: 'My Startup' },
+    { id: 'tour-investors', to: '/investors', icon: <CircleDollarSign size={20} />, text: 'Find Investors' },
+    { id: 'tour-messages-sidebar', to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
   ];
   
   const investorItems = [
-    { to: '/dashboard/investor', icon: <Home size={20} />, text: 'Dashboard' },
-    { to: '/profile/investor/' + user.id, icon: <CircleDollarSign size={20} />, text: 'My Portfolio' },
-    { to: '/entrepreneurs', icon: <Users size={20} />, text: 'Find Startups' },
-    { to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
-    { to: '/notifications', icon: <Bell size={20} />, text: 'Notifications' },
-    { to: '/deals', icon: <FileText size={20} />, text: 'Deals' },
+    { id: 'tour-dashboard', to: '/dashboard/investor', icon: <Home size={20} />, text: 'Dashboard' },
+    { id: 'tour-meetings', to: '/dashboard/investor#meetings', icon: <Calendar size={20} />, text: 'Meetings' },
+    { id: 'tour-pitch', to: '/dashboard/investor#pitch-room', icon: <Video size={20} />, text: 'Live Pitch Room' },
+    { id: 'tour-docs', to: '/dashboard/investor#documents', icon: <FileText size={20} />, text: 'Documents' },
+    { id: 'tour-finance', to: '/dashboard/investor#portfolio', icon: <Wallet size={20} />, text: 'Finance' },
+    { id: 'tour-security', to: '/dashboard/investor#security', icon: <ShieldCheck size={20} />, text: 'Security' },
+    { id: 'tour-profile-sidebar', to: '/profile/investor/' + user.id, icon: <CircleDollarSign size={20} />, text: 'My Profile' },
+    { id: 'tour-entrepreneurs', to: '/entrepreneurs', icon: <Users size={20} />, text: 'Find Startups' },
+    { id: 'tour-messages-sidebar', to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
   ];
-  
+
   const sidebarItems = user.role === 'entrepreneur' ? entrepreneurItems : investorItems;
   
-  // Common items at the bottom
   const commonItems = [
-    { to: '/settings', icon: <Settings size={20} />, text: 'Settings' },
-    { to: '/help', icon: <HelpCircle size={20} />, text: 'Help & Support' },
+    { id: 'tour-settings', to: '/settings', icon: <Settings size={20} />, text: 'Settings' },
+    { id: 'tour-help', to: '/help', icon: <HelpCircle size={20} />, text: 'Help & Support' },
   ];
   
   return (
@@ -70,6 +78,7 @@ export const Sidebar: React.FC = () => {
             {sidebarItems.map((item, index) => (
               <SidebarItem
                 key={index}
+                id={item.id}
                 to={item.to}
                 icon={item.icon}
                 text={item.text}
@@ -78,16 +87,15 @@ export const Sidebar: React.FC = () => {
           </div>
           
           <div className="mt-8 px-3">
-            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Settings
-            </h3>
+            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Settings</h3>
             <div className="mt-2 space-y-1">
               {commonItems.map((item, index) => (
-                <SidebarItem
-                  key={index}
-                  to={item.to}
-                  icon={item.icon}
-                  text={item.text}
+                <SidebarItem 
+                  key={index} 
+                  id={item.id} 
+                  to={item.to} 
+                  icon={item.icon} 
+                  text={item.text} 
                 />
               ))}
             </div>
@@ -95,15 +103,8 @@ export const Sidebar: React.FC = () => {
         </div>
         
         <div className="p-4 border-t border-gray-200">
-          <div className="bg-gray-50 rounded-md p-3">
-            <p className="text-xs text-gray-600">Need assistance?</p>
-            <h4 className="text-sm font-medium text-gray-900 mt-1">Contact Support</h4>
-            <a 
-              href="mailto:support@businessnexus.com" 
-              className="mt-2 inline-flex items-center text-xs font-medium text-primary-600 hover:text-primary-500"
-            >
-              support@businessnexus.com
-            </a>
+          <div className="bg-gray-50 rounded-md p-3 text-center">
+            <p className="text-xs text-gray-600 font-medium">support@businessnexus.com</p>
           </div>
         </div>
       </div>

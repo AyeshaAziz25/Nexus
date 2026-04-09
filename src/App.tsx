@@ -1,99 +1,54 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-// Layouts
-import { DashboardLayout } from './components/layout/DashboardLayout';
-
-// Auth Pages
-import { LoginPage } from './pages/auth/LoginPage';
-import { RegisterPage } from './pages/auth/RegisterPage';
-
-// Dashboard Pages
-import { EntrepreneurDashboard } from './pages/dashboard/EntrepreneurDashboard';
-import { InvestorDashboard } from './pages/dashboard/InvestorDashboard';
-
-// Profile Pages
+// 1. ALL IMPORTS MUST BE HERE AT THE TOP
+import { MessagesPage } from './pages/messages/MessagesPage'; 
+import { NotificationsPage } from './pages/notifications/NotificationsPage';
 import { EntrepreneurProfile } from './pages/profile/EntrepreneurProfile';
 import { InvestorProfile } from './pages/profile/InvestorProfile';
 
-// Feature Pages
-import { InvestorsPage } from './pages/investors/InvestorsPage';
-import { EntrepreneursPage } from './pages/entrepreneurs/EntrepreneursPage';
-import { MessagesPage } from './pages/messages/MessagesPage';
-import { NotificationsPage } from './pages/notifications/NotificationsPage';
-import { DocumentsPage } from './pages/documents/DocumentsPage';
-import { SettingsPage } from './pages/settings/SettingsPage';
-import { HelpPage } from './pages/help/HelpPage';
-import { DealsPage } from './pages/deals/DealsPage';
+// Layouts & Pages
+import { DashboardLayout } from './components/layout/DashboardLayout';
+import { LoginPage } from './pages/auth/LoginPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
+import { EntrepreneurDashboard } from './pages/dashboard/EntrepreneurDashboard';
+import { InvestorDashboard } from './pages/dashboard/InvestorDashboard';
 
-// Chat Pages
-import { ChatPage } from './pages/chat/ChatPage';
+// A simple wrapper to protect routes
+const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+};
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Authentication Routes */}
+          {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          
-          {/* Dashboard Routes */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route path="entrepreneur" element={<EntrepreneurDashboard />} />
-            <Route path="investor" element={<InvestorDashboard />} />
+
+          {/* Protected Routes */}
+          <Route path="/" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
+            {/* Dashboard Sub-routes */}
+            <Route path="dashboard/entrepreneur" element={<EntrepreneurDashboard />} />
+            <Route path="dashboard/investor" element={<InvestorDashboard />} />
+            
+            {/* 2. DEFINE THE ROUTES HERE (NO IMPORTS HERE) */}
+            <Route path="messages" element={<MessagesPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            
+            {/* If your navbar uses /profile/entrepreneur/:id */}
+            <Route path="profile/entrepreneur/:id" element={<EntrepreneurProfile />} />
+            <Route path="profile/investor/:id" element={<InvestorProfile />} />
           </Route>
-          
-          {/* Profile Routes */}
-          <Route path="/profile" element={<DashboardLayout />}>
-            <Route path="entrepreneur/:id" element={<EntrepreneurProfile />} />
-            <Route path="investor/:id" element={<InvestorProfile />} />
-          </Route>
-          
-          {/* Feature Routes */}
-          <Route path="/investors" element={<DashboardLayout />}>
-            <Route index element={<InvestorsPage />} />
-          </Route>
-          
-          <Route path="/entrepreneurs" element={<DashboardLayout />}>
-            <Route index element={<EntrepreneursPage />} />
-          </Route>
-          
-          <Route path="/messages" element={<DashboardLayout />}>
-            <Route index element={<MessagesPage />} />
-          </Route>
-          
-          <Route path="/notifications" element={<DashboardLayout />}>
-            <Route index element={<NotificationsPage />} />
-          </Route>
-          
-          <Route path="/documents" element={<DashboardLayout />}>
-            <Route index element={<DocumentsPage />} />
-          </Route>
-          
-          <Route path="/settings" element={<DashboardLayout />}>
-            <Route index element={<SettingsPage />} />
-          </Route>
-          
-          <Route path="/help" element={<DashboardLayout />}>
-            <Route index element={<HelpPage />} />
-          </Route>
-          
-          <Route path="/deals" element={<DashboardLayout />}>
-            <Route index element={<DealsPage />} />
-          </Route>
-          
-          {/* Chat Routes */}
-          <Route path="/chat" element={<DashboardLayout />}>
-            <Route index element={<ChatPage />} />
-            <Route path=":userId" element={<ChatPage />} />
-          </Route>
-          
-          {/* Redirect root to login */}
+
+          {/* Redirects */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-          
-          {/* Catch all other routes and redirect to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>

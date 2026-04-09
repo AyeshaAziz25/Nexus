@@ -1,187 +1,206 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, PieChart, Filter, Search, PlusCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom'; // Added useLocation
+import { 
+  Users, Filter, Search, PlusCircle, 
+  Wallet, TrendingUp, Video, FileText, 
+  Fingerprint, Smartphone, ShieldAlert, Lock 
+} from 'lucide-react';
+
+// Components
+import VideoCallSection from '../../components/VideoCallSection';
+import DocumentChamber from '../../components/DocumentChamber';
+import MeetingCalendar from '../../components/MeetingCalendar';
+import { PaymentSection } from '../../components/payments/PaymentSection';
+
+// UI Components
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { EntrepreneurCard } from '../../components/entrepreneur/EntrepreneurCard';
+
+// Context & Data
 import { useAuth } from '../../context/AuthContext';
-import { Entrepreneur } from '../../types';
 import { entrepreneurs } from '../../data/users';
-import { getRequestsFromInvestor } from '../../data/collaborationRequests';
 
 export const InvestorDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { pathname, hash } = useLocation(); // Get URL hash
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   
+  // Security States
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+
+  // --- NEW: Scroll to Section Logic ---
+  useEffect(() => {
+    if (hash) {
+      const element = document.getElementById(hash.replace('#', ''));
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [pathname, hash]);
+
   if (!user) return null;
-  
-  // Get collaboration requests sent by this investor
-  const sentRequests = getRequestsFromInvestor(user.id);
-  const requestedEntrepreneurIds = sentRequests.map(req => req.entrepreneurId);
-  
-  // Filter entrepreneurs based on search and industry filters
-  const filteredEntrepreneurs = entrepreneurs.filter(entrepreneur => {
-    // Search filter
-    const matchesSearch = searchQuery === '' || 
-      entrepreneur.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entrepreneur.startupName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entrepreneur.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entrepreneur.pitchSummary.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Industry filter
-    const matchesIndustry = selectedIndustries.length === 0 || 
-      selectedIndustries.includes(entrepreneur.industry);
-    
-    return matchesSearch && matchesIndustry;
-  });
-  
-  // Get unique industries for filter
-  const industries = Array.from(new Set(entrepreneurs.map(e => e.industry)));
-  
-  // Toggle industry selection
-  const toggleIndustry = (industry: string) => {
-    setSelectedIndustries(prevSelected => 
-      prevSelected.includes(industry)
-        ? prevSelected.filter(i => i !== industry)
-        : [...prevSelected, industry]
-    );
+
+  const isInvestor = user.role === 'investor';
+
+  // Logic: Password Strength
+  const calculateStrength = (pass: string) => {
+    let score = 0;
+    if (pass.length > 8) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    return score;
   };
-  
+
+  const strength = calculateStrength(password);
+  const strengthColors = ["bg-gray-200", "bg-red-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
+
+  const handleOtpChange = (value: string, index: number) => {
+    if (isNaN(Number(value))) return;
+    const newOtp = [...otp];
+    newOtp[index] = value.substring(value.length - 1);
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      (nextInput as HTMLInputElement)?.focus();
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-10 max-w-7xl mx-auto px-4">
+      {/* 1. HEADER SECTION */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Discover Startups</h1>
-          <p className="text-gray-600">Find and connect with promising entrepreneurs</p>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome Back, {user.name}</h1>
+          <p className="text-gray-600">{isInvestor ? "Investor Control Center" : "Founder Dashboard"}</p>
         </div>
-        
         <Link to="/entrepreneurs">
-          <Button
-            leftIcon={<PlusCircle size={18} />}
-          >
-            View All Startups
-          </Button>
+          <Button leftIcon={<PlusCircle size={18} />}>View All Startups</Button>
         </Link>
       </div>
-      
-      {/* Filters and search */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-2/3">
-          <Input
-            placeholder="Search startups, industries, or keywords..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            fullWidth
-            startAdornment={<Search size={18} />}
-          />
+
+      {/* 2. CALENDAR - Added ID */}
+      <section id="meetings" className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
+          Availability & Meetings
+        </h2>
+        <Card className="w-full">
+          <CardBody>
+            <MeetingCalendar />
+          </CardBody>
+        </Card>
+      </section>
+
+      {/* 3. LIVE PITCH & DOCUMENTS - Added IDs */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4 border-t border-gray-100">
+        <div id="pitch-room" className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Video size={20} className="text-indigo-600" />
+            Live Pitch Room
+          </h2>
+          <VideoCallSection />
         </div>
-        
-        <div className="w-full md:w-1/3">
-          <div className="flex items-center space-x-2">
-            <Filter size={18} className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Filter by:</span>
-            
-            <div className="flex flex-wrap gap-2">
-              {industries.map(industry => (
-                <Badge
-                  key={industry}
-                  variant={selectedIndustries.includes(industry) ? 'primary' : 'gray'}
-                  className="cursor-pointer"
-                  onClick={() => toggleIndustry(industry)}
-                >
-                  {industry}
-                </Badge>
+        <div id="documents" className="space-y-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <FileText size={20} className="text-green-600" />
+            Document Chamber
+          </h2>
+          <DocumentChamber />
+        </div>
+      </section>
+
+      {/* 4. FINANCE SECTION - Added ID */}
+      <section id="portfolio" className="space-y-4 pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Wallet size={22} className="text-indigo-600" />
+            Investment Funds & Wallet
+          </h2>
+          <Badge variant="success">Active Portfolio</Badge>
+        </div>
+        <div className="max-w-4xl">
+          <PaymentSection role={user.role} />
+        </div>
+      </section>
+
+      {/* 5. SECURITY - Added ID */}
+      <section id="security" className="space-y-4 pt-4 border-t border-gray-100">
+        <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
+          <ShieldAlert className="text-emerald-600" size={22} />
+          Security & Access Control
+        </h2>
+        <Card className="border-emerald-100 bg-emerald-50/30">
+          <CardBody>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Lock className="text-emerald-700" size={18} />
+                  <h3 className="font-bold text-sm">Update Master Password</h3>
+                </div>
+                <Input 
+                  type="password" 
+                  placeholder="Minimum 8 characters..."
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  fullWidth
+                />
+                <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden flex gap-1">
+                  {[1, 2, 3, 4].map((step) => (
+                    <div 
+                      key={step}
+                      className={`h-full flex-1 transition-all duration-500 ${step <= strength ? strengthColors[strength] : 'bg-gray-200'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Fingerprint className="text-emerald-700" size={18} />
+                  <h3 className="font-bold text-sm">Two-Factor Authentication</h3>
+                </div>
+                <div className="flex gap-2">
+                  {otp.map((digit, i) => (
+                    <input 
+                      key={i}
+                      id={`otp-${i}`}
+                      type="text"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(e.target.value, i)}
+                      className="w-10 h-12 text-center text-xl font-bold border-2 border-emerald-200 rounded-md bg-white focus:border-emerald-500 outline-none transition-all"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </section>
+
+      {/* 6. FEATURED STARTUPS */}
+      <section className="pt-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Featured Opportunities</h2>
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {entrepreneurs.slice(0, 3).map(e => (
+                <EntrepreneurCard key={e.id} entrepreneur={e} />
               ))}
             </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Stats summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-primary-50 border border-primary-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-primary-100 rounded-full mr-4">
-                <Users size={20} className="text-primary-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-primary-700">Total Startups</p>
-                <h3 className="text-xl font-semibold text-primary-900">{entrepreneurs.length}</h3>
-              </div>
-            </div>
           </CardBody>
         </Card>
-        
-        <Card className="bg-secondary-50 border border-secondary-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-secondary-100 rounded-full mr-4">
-                <PieChart size={20} className="text-secondary-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-secondary-700">Industries</p>
-                <h3 className="text-xl font-semibold text-secondary-900">{industries.length}</h3>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-        
-        <Card className="bg-accent-50 border border-accent-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-accent-100 rounded-full mr-4">
-                <Users size={20} className="text-accent-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-accent-700">Your Connections</p>
-                <h3 className="text-xl font-semibold text-accent-900">
-                  {sentRequests.filter(req => req.status === 'accepted').length}
-                </h3>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-      
-      {/* Entrepreneurs grid */}
-      <div>
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-medium text-gray-900">Featured Startups</h2>
-          </CardHeader>
-          
-          <CardBody>
-            {filteredEntrepreneurs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEntrepreneurs.map(entrepreneur => (
-                  <EntrepreneurCard
-                    key={entrepreneur.id}
-                    entrepreneur={entrepreneur}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No startups match your filters</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-2"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedIndustries([]);
-                  }}
-                >
-                  Clear filters
-                </Button>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </div>
+      </section>
     </div>
   );
 };

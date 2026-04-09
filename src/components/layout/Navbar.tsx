@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 
-export const Navbar: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  export const Navbar: React.FC = () => {
+const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   
@@ -19,12 +19,10 @@ export const Navbar: React.FC = () => {
     navigate('/login');
   };
   
-  // User dashboard route based on role
   const dashboardRoute = user?.role === 'entrepreneur' 
     ? '/dashboard/entrepreneur' 
     : '/dashboard/investor';
   
-  // User profile route based on role and ID
   const profileRoute = user 
     ? `/profile/${user.role}/${user.id}` 
     : '/login';
@@ -56,7 +54,6 @@ export const Navbar: React.FC = () => {
     <nav className="bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* Logo and brand */}
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary-600 rounded-md flex items-center justify-center">
@@ -69,7 +66,6 @@ export const Navbar: React.FC = () => {
             </Link>
           </div>
           
-          {/* Desktop navigation */}
           <div className="hidden md:flex md:items-center md:ml-6">
             {user ? (
               <div className="flex items-center space-x-4">
@@ -114,7 +110,6 @@ export const Navbar: React.FC = () => {
             )}
           </div>
           
-          {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={toggleMenu}
@@ -130,7 +125,6 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
       
-      {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 animate-fade-in">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
